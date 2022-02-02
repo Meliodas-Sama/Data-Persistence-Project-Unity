@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.IO;
 
 public class MainManager : MonoBehaviour
 {
@@ -11,14 +12,17 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text BestScoreText;
     public GameObject GameOverText;
     
     private bool m_Started = false;
     private int m_Points;
+    SaveData bestPlayer ;
     
     private bool m_GameOver = false;
+    private string currentPlayerName;
 
-    
+
     // Start is called before the first frame update
     void Start()
     {
@@ -35,6 +39,49 @@ public class MainManager : MonoBehaviour
                 brick.PointValue = pointCountArray[i];
                 brick.onDestroyed.AddListener(AddPoint);
             }
+        }
+
+        currentPlayerName = StartMenuManager.playerNameText;
+        bestPlayer = new SaveData();
+        LoadBestScore();
+        BestScoreText.text = $"Best Score: {bestPlayer.bestPlayerName} : {bestPlayer.bestPlayerScore}";
+    }
+
+    [System.Serializable]
+    class SaveData
+    {
+        public string bestPlayerName;
+        public int bestPlayerScore;
+    }
+
+    public void SaveBestScroe()
+    {
+        if(m_Points >= bestPlayer.bestPlayerScore)
+        {
+            SaveData temp = new SaveData();
+            temp.bestPlayerName = currentPlayerName;
+            temp.bestPlayerScore = m_Points;
+
+            string json = JsonUtility.ToJson(temp);
+            File.WriteAllText(Application.persistentDataPath + "/savefile.json", json);
+        }
+    }
+
+    public void LoadBestScore()
+    {
+        string path = Application.persistentDataPath + "/savefile.json";
+        if (File.Exists(path))
+        {
+            string json = File.ReadAllText(path);
+            SaveData temp;
+            temp = JsonUtility.FromJson<SaveData>(json);
+            bestPlayer.bestPlayerName = temp.bestPlayerName;
+            bestPlayer.bestPlayerScore = temp.bestPlayerScore;
+        }
+        else
+        {
+            bestPlayer.bestPlayerName = "";
+            bestPlayer.bestPlayerScore = 0;
         }
     }
 
@@ -70,6 +117,7 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        SaveBestScroe();
         m_GameOver = true;
         GameOverText.SetActive(true);
     }
